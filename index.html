@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Siri — Your AI Friend</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+:root {
+  --bg: #05050a;
+  --cyan: #00e5ff;
+  --violet: #aa00ff;
+  --pink: #ff3d9a;
+  --text: #ffffff;
+  --muted: #8892b0;
+  --state-a: var(--cyan);
+  --state-b: var(--violet);
+  --glass: rgba(255,255,255,0.06);
+  --glass-border: rgba(255,255,255,0.14);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+body {
+  color: var(--text);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; overflow: hidden; background: var(--bg);
+}
+
+/* ---------- Ambient background ---------- */
+.bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+.bg::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 45%, #14143a 0%, #05050a 70%);
+}
+.blob {
+  position: absolute; border-radius: 50%; filter: blur(90px); opacity: .35;
+  animation: drift 22s ease-in-out infinite alternate;
+  transition: background .8s ease;
+}
+.blob.b1 { width: 45vmax; height: 45vmax; left: -10vmax; top: -12vmax; background: var(--state-a); }
+.blob.b2 { width: 40vmax; height: 40vmax; right: -12vmax; bottom: -10vmax; background: var(--state-b); animation-delay: -8s; }
+.blob.b3 { width: 25vmax; height: 25vmax; left: 40%; top: 55%; background: var(--pink); opacity: .15; animation-delay: -14s; }
+@keyframes drift {
+  0%   { transform: translate(0,0) scale(1); }
+  50%  { transform: translate(6vmax,4vmax) scale(1.15); }
+  100% { transform: translate(-4vmax,8vmax) scale(.95); }
+}
+.stars { position: absolute; inset: 0; opacity: .5; }
+.stars i {
+  position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff;
+  animation: twinkle 4s ease-in-out infinite;
+}
+@keyframes twinkle { 0%,100% { opacity: .1; } 50% { opacity: .9; } }
+
+/* ---------- Header ---------- */
+header { position: absolute; top: 5vh; text-align: center; z-index: 10; animation: headIn 1.2s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes headIn { from { opacity: 0; transform: translateY(-20px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+h1 {
+  font-size: 3.2rem; font-weight: 600; letter-spacing: 6px;
+  background: linear-gradient(90deg, #fff, #b3e5fc, #e1bee7, #fff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  animation: shimmer 8s linear infinite;
+  margin-bottom: 6px;
+}
+@keyframes shimmer { to { background-position: -300% 0; } }
+.tagline { font-size: .9rem; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; }
+
+/* ---------- Main ---------- */
+main { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; width: 100%; z-index: 10; }
+
+.status-text {
+  font-size: 1.2rem; font-weight: 300; margin-bottom: 40px; height: 30px;
+  color: var(--cyan); letter-spacing: 1px;
+  transition: color .4s ease;
+}
+.status-text.swap { animation: statusSwap .45s ease; }
+@keyframes statusSwap { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Orb ---------- */
+.mic-container { position: relative; display: flex; justify-content: center; align-items: center; width: 260px; height: 260px; }
+
+.ring {
+  position: absolute; width: 110px; height: 110px; border-radius: 50%;
+  border: 2px solid var(--state-a); opacity: 0; pointer-events: none;
+}
+.waves {
+  position: absolute; width: 100%; height: 100%; border-radius: 50%;
+  background: radial-gradient(circle, var(--state-a) 0%, transparent 68%);
+  opacity: .12; z-index: 1; pointer-events: none;
+  transition: opacity .4s ease;
+  animation: idleBreath 5s ease-in-out infinite;
+}
+@keyframes idleBreath { 0%,100% { transform: scale(.85); } 50% { transform: scale(1); } }
+
+.mic-btn {
+  position: relative; width: 110px; height: 110px; border-radius: 50%;
+  border: 1px solid var(--glass-border); color: #fff; cursor: pointer;
+  display: flex; justify-content: center; align-items: center; z-index: 2; overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.35), transparent 40%),
+    linear-gradient(135deg, #1e1e3c, #0e0e22);
+  box-shadow: 0 0 30px rgba(0,229,255,.18), inset 0 0 20px rgba(255,255,255,.06);
+  transition: transform .3s cubic-bezier(.3,1.6,.5,1), box-shadow .4s ease, background .5s ease, border-color .4s ease;
+}
+.mic-btn::after { /* rotating sheen */
+  content: ""; position: absolute; inset: -50%;
+  background: conic-gradient(from 0deg, transparent 0 70%, rgba(255,255,255,.22) 85%, transparent 100%);
+  animation: sheen 6s linear infinite; pointer-events: none;
+}
+@keyframes sheen { to { transform: rotate(360deg); } }
+.mic-btn svg { position: relative; z-index: 1; width: 42px; height: 42px; fill: currentColor; transition: transform .25s ease, opacity .25s ease; }
+.mic-btn:hover { transform: scale(1.08); box-shadow: 0 0 45px rgba(0,229,255,.4), inset 0 0 20px rgba(255,255,255,.08); }
+.mic-btn:active { transform: scale(.94); }
+.mic-btn:focus-visible, .btn-control:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
+.mic-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* equalizer bars shown while speaking */
+.eq { position: absolute; z-index: 2; display: none; gap: 5px; align-items: center; height: 44px; }
+.eq span { width: 5px; height: 10px; border-radius: 4px; background: #fff; animation: eq 0.9s ease-in-out infinite; }
+.eq span:nth-child(2) { animation-delay: -.2s; } .eq span:nth-child(3) { animation-delay: -.4s; }
+.eq span:nth-child(4) { animation-delay: -.6s; } .eq span:nth-child(5) { animation-delay: -.8s; }
+@keyframes eq { 0%,100% { height: 8px; } 50% { height: 40px; } }
+
+/* ---------- State: Listening ---------- */
+.state-listening { --state-a: #00e5ff; --state-b: #0a9396; }
+.state-listening .mic-btn { background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.4), transparent 40%), linear-gradient(135deg, #005f73, #0a9396); border-color: var(--cyan); box-shadow: 0 0 50px rgba(0,229,255,.65); }
+.state-listening .waves { opacity: .35; animation: none; }
+.state-listening .ring { animation: ripple 2.1s infinite cubic-bezier(.2,.6,.3,1); }
+.state-listening .ring:nth-of-type(2) { animation-delay: .7s; }
+.state-listening .ring:nth-of-type(3) { animation-delay: 1.4s; }
+@keyframes ripple { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(2.4); opacity: 0; } }
+
+/* ---------- State: Thinking ---------- */
+.state-thinking { --state-a: #aa00ff; --state-b: #ff3d9a; }
+.state-thinking .mic-btn { background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.35), transparent 40%), linear-gradient(135deg, #3c096c, #5a189a); border-color: var(--violet); box-shadow: 0 0 50px rgba(170,0,255,.65); animation: thinkPulse 1.4s ease-in-out infinite; }
+.state-thinking .waves { opacity: .5; animation: spin-think 2.4s linear infinite; background: conic-gradient(from 0deg, var(--violet), var(--pink), var(--cyan), var(--violet)); -webkit-mask: radial-gradient(circle, transparent 38%, #000 40%, #000 62%, transparent 64%); mask: radial-gradient(circle, transparent 38%, #000 40%, #000 62%, transparent 64%); }
+.state-thinking .mic-btn svg { opacity: .5; transform: scale(.85); }
+@keyframes spin-think { to { transform: rotate(360deg); } }
+@keyframes thinkPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+
+/* ---------- State: Speaking ---------- */
+.state-speaking { --state-a: #00e5ff; --state-b: #7c4dff; }
+.state-speaking .mic-btn { background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.45), transparent 40%), linear-gradient(135deg, #005f73, #00e5ff); box-shadow: 0 0 70px rgba(0,229,255,.85); animation: speakPulse .8s ease-in-out infinite alternate; }
+.state-speaking .waves { opacity: .55; animation: wave-speak 1s infinite alternate ease-in-out; }
+.state-speaking .ring { animation: ripple 1.6s infinite cubic-bezier(.2,.6,.3,1); }
+.state-speaking .ring:nth-of-type(2) { animation-delay: .5s; }
+.state-speaking .ring:nth-of-type(3) { animation-delay: 1s; }
+.state-speaking .mic-btn svg { display: none; }
+.state-speaking .eq { display: flex; }
+@keyframes wave-speak { 0% { transform: scale(.95); opacity: .3; } 100% { transform: scale(1.3); opacity: .7; } }
+@keyframes speakPulse { to { transform: scale(1.07); } }
+
+/* ---------- Conversation ---------- */
+.conversation {
+  margin-top: 36px; width: 90%; max-width: 620px; text-align: center; min-height: 110px;
+  padding: 18px 22px; border-radius: 24px;
+  background: var(--glass); border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  transition: opacity .4s ease, transform .4s ease;
+}
+.conversation.empty { opacity: .0; transform: translateY(10px); pointer-events: none; }
+.chat-user { color: var(--muted); font-size: 1rem; margin-bottom: 10px; font-style: italic; min-height: 1.2em; }
+.chat-siri { color: var(--text); font-size: 1.2rem; line-height: 1.55; }
+.pop { animation: pop .5s cubic-bezier(.2,.9,.3,1.2); }
+@keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+.caret::after { content: "▍"; color: var(--cyan); margin-left: 2px; animation: blink .8s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ---------- Controls ---------- */
+.controls { position: absolute; bottom: 5vh; display: flex; gap: 14px; z-index: 10; }
+.btn-control {
+  background: var(--glass); border: 1px solid var(--glass-border); color: var(--muted);
+  padding: 11px 22px; border-radius: 22px; cursor: pointer; font-size: .85rem;
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  transition: all .25s ease;
+}
+.btn-control:hover { background: rgba(255,255,255,.14); color: #fff; transform: translateY(-2px); }
+.btn-control:active { transform: translateY(0) scale(.96); }
+.btn-control.active-glow { background: rgba(0,229,255,.2); color: var(--text); border-color: var(--cyan); animation: glowPulse 2.2s ease-in-out infinite; }
+@keyframes glowPulse { 0%,100% { box-shadow: 0 0 8px rgba(0,229,255,.3); } 50% { box-shadow: 0 0 22px rgba(0,229,255,.65); } }
+
+.error-msg { color: #ff6b6b; font-size: .9rem; margin-top: 10px; position: absolute; bottom: 13vh; z-index: 10; text-align: center; padding: 0 20px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 600px) {
+  h1 { font-size: 2.5rem; letter-spacing: 4px; }
+  .mic-container { width: 220px; height: 220px; }
+  .mic-btn { width: 90px; height: 90px; }
+  .ring { width: 90px; height: 90px; }
+  .status-text { font-size: 1rem; }
+  .chat-siri { font-size: 1rem; }
+  .controls { flex-wrap: wrap; justify-content: center; gap: 10px; width: 92%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+  <div class="stars" id="stars"></div>
+</div>
+
+<header>
+  <h1>Siri</h1>
+  <div class="tagline">Talk. Listen. Connect.</div>
+</header>
+
+<main id="app-main">
+  <div class="status-text" id="status-text" aria-live="polite">How can I help you?</div>
+
+  <div class="mic-container">
+    <div class="waves"></div>
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    <button class="mic-btn" id="mic-btn" title="Click to speak or interrupt" aria-label="Microphone">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+      </svg>
+      <div class="eq"><span></span><span></span><span></span><span></span><span></span></div>
+    </button>
+  </div>
+
+  <div class="conversation empty" id="conversation">
+    <div class="chat-user" id="chat-user"></div>
+    <div class="chat-siri" id="chat-siri"></div>
+  </div>
+</main>
+
+<div class="error-msg" id="error-msg"></div>
+
+<div class="controls">
+  <button class="btn-control" id="btn-wakeword">Enable Wake Word Mode</button>
+  <button class="btn-control" id="btn-mute">Mute Output</button>
+  <button class="btn-control" id="btn-clear">Clear</button>
+</div>
+
+<script>
+// ---------- DOM Elements ----------
+const micBtn = document.getElementById('mic-btn');
+const statusText = document.getElementById('status-text');
+const appMain = document.getElementById('app-main');
+const chatUser = document.getElementById('chat-user');
+const chatSiri = document.getElementById('chat-siri');
+const conversation = document.getElementById('conversation');
+const errorMsg = document.getElementById('error-msg');
+const btnMute = document.getElementById('btn-mute');
+const btnClear = document.getElementById('btn-clear');
+const btnWakeWord = document.getElementById('btn-wakeword');
+const root = document.documentElement;
+
+// ---------- Starfield ----------
+(function makeStars() {
+  const box = document.getElementById('stars');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('i');
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 100 + '%';
+    s.style.animationDelay = (Math.random() * 4) + 's';
+    s.style.animationDuration = (3 + Math.random() * 4) + 's';
+    box.appendChild(s);
+  }
+})();
+
+// ---------- State Variables ----------
+let isMuted = false;
+let isSpeaking = false;
+let wakeWordMode = false;
+let activeListening = false;
+let typeTimer = null;
+
+// ---------- Speech Synthesis setup ----------
+const synth = window.speechSynthesis;
+let siriVoice = null;
+
+function loadVoice() {
+  const voices = synth.getVoices();
+  siriVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Zira') || v.name.includes('Google UK English Female')) || voices.find(v => v.lang.startsWith('en-'));
+}
+synth.onvoiceschanged = loadVoice;
+
+// ---------- Speech Recognition Setup ----------
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+if (!SpeechRecognition) {
+  errorMsg.innerText = "Speech Recognition API not supported in this browser. Please use Chrome or Edge.";
+  micBtn.disabled = true;
+  btnWakeWord.disabled = true;
+} else {
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+}
+
+// ---------- UI ----------
+function setStatus(text, color) {
+  if (statusText.innerText !== text) {
+    statusText.innerText = text;
+    statusText.classList.remove('swap');
+    void statusText.offsetWidth; // restart animation
+    statusText.classList.add('swap');
+  }
+  statusText.style.color = color;
+}
+
+function setUIState(state) {
+  appMain.className = ''; // reset
+  if (state === 'idle') {
+    setStatus(wakeWordMode ? "Waiting for 'Hello Siri'..." : "How can I help you?", "var(--cyan)");
+  } else if (state === 'listening') {
+    appMain.classList.add('state-listening');
+    setStatus("Listening...", "#00e5ff");
+  } else if (state === 'thinking') {
+    appMain.classList.add('state-thinking');
+    setStatus("Thinking...", "#c77dff");
+  } else if (state === 'speaking') {
+    appMain.classList.add('state-speaking');
+    setStatus("Speaking...", "#00e5ff");
+  }
+  // Let the ambient background glow follow the state
+  const map = {
+    idle: ['#00e5ff', '#aa00ff'],
+    listening: ['#00e5ff', '#0a9396'],
+    thinking: ['#aa00ff', '#ff3d9a'],
+    speaking: ['#00e5ff', '#7c4dff']
+  };
+  root.style.setProperty('--state-a', map[state][0]);
+  root.style.setProperty('--state-b', map[state][1]);
+}
+
+function showConversation() { conversation.classList.remove('empty'); }
+
+function setUserText(t) {
+  showConversation();
+  chatUser.innerText = `" ${t} "`;
+  chatUser.classList.remove('pop'); void chatUser.offsetWidth; chatUser.classList.add('pop');
+}
+
+// Typewriter effect for Siri's reply
+function typeSiri(text) {
+  showConversation();
+  clearInterval(typeTimer);
+  chatSiri.innerText = "";
+  chatSiri.classList.add('caret');
+  let i = 0;
+  const step = Math.max(1, Math.ceil(text.length / 160));
+  typeTimer = setInterval(() => {
+    i += step;
+    chatSiri.innerText = text.slice(0, i);
+    if (i >= text.length) {
+      clearInterval(typeTimer);
+      chatSiri.innerText = text;
+      chatSiri.classList.remove('caret');
+    }
+  }, 18);
+}
+
+// ---------- Recognition handlers ----------
+if (recognition) {
+  recognition.onstart = function() {
+    if (!wakeWordMode || activeListening) {
+      setUIState('listening');
+    }
+  };
+
+  recognition.onspeechend = function() {
+    recognition.stop();
+  };
+
+  recognition.onerror = function(event) {
+    if (event.error === 'not-allowed') {
+      errorMsg.innerText = "Microphone access denied.";
+      wakeWordMode = false;
+      btnWakeWord.innerText = "Enable Wake Word Mode";
+      btnWakeWord.classList.remove("active-glow");
+    }
+    if (!wakeWordMode) setUIState('idle');
+  };
+
+  recognition.onend = function() {
+    // Loop recognition if wake word mode is on and we aren't actively processing a query
+    if (wakeWordMode && !activeListening && !isSpeaking) {
+      try { recognition.start(); } catch(e) {}
+    }
+  };
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript.toLowerCase().trim();
+
+    if (wakeWordMode && !activeListening) {
+      // Background wake word loop detected speech
+      if (transcript.includes("hello siri") || transcript.includes("hey siri")) {
+        setUserText(transcript);
+        activeListening = true; // Switch to active mode so user can ask their question
+
+        // Respond to wake word. Pass "true" so mic turns on right after!
+        speakResponse("Hello! How can I help you?", true);
+      }
+      return;
+    }
+
+    // Normal active listening response (User's actual question)
+    setUserText(transcript);
+    processText(transcript);
+  };
+}
+
+async function processText(text) {
+  setUIState('thinking');
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+
+    const data = await response.json();
+    typeSiri(data.response);
+
+    // Check if Siri's response ends with a question mark
+    const isAskingQuestion = data.response.trim().endsWith("?");
+
+    // Speak the final answer. If it's a question, keep listening!
+    speakResponse(data.response, isAskingQuestion);
+
+  } catch (error) {
+    console.error("API Error:", error);
+    const msg = "Sorry, I am having trouble connecting to my servers.";
+    typeSiri(msg);
+    speakResponse(msg, false);
+  }
+}
+
+// 'keepListeningAfter' flag automatically handles the transition
+function speakResponse(text, keepListeningAfter = false) {
+  if (isMuted) {
+    activeListening = keepListeningAfter;
+    setUIState(keepListeningAfter ? 'listening' : 'idle');
+    if (wakeWordMode || keepListeningAfter) {
+      setTimeout(() => { try { recognition.start(); } catch(e){} }, 500);
+    }
+    return;
+  }
+
+  isSpeaking = true;
+  synth.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  if (siriVoice) utterance.voice = siriVoice;
+  utterance.rate = 1.0;
+  utterance.pitch = 1.1;
+
+  utterance.onstart = () => {
+    setUIState('speaking');
+  };
+
+  utterance.onend = () => {
+    isSpeaking = false;
+
+    if (keepListeningAfter) {
+      // Turn mic on immediately for user's reply
+      activeListening = true;
+      setUIState('listening');
+      setTimeout(() => { try { recognition.start(); } catch(e){} }, 300);
+    } else {
+      // Go back to idle / wake-word standby mode
+      activeListening = false;
+      setUIState('idle');
+      if (wakeWordMode) {
+        setTimeout(() => { try { recognition.start(); } catch(e){} }, 500);
+      }
+    }
+  };
+
+  synth.speak(utterance);
+}
+
+// ---------- Interactions ----------
+micBtn.addEventListener('click', () => {
+  if (isSpeaking) {
+    synth.cancel();
+    isSpeaking = false;
+    activeListening = false;
+    setUIState('idle');
+    return;
+  }
+
+  errorMsg.innerText = "";
+  wakeWordMode = false;
+  activeListening = true;
+  btnWakeWord.innerText = "Enable Wake Word Mode";
+  btnWakeWord.classList.remove("active-glow");
+
+  try {
+    recognition.start();
+  } catch(e) {
+    recognition.stop();
+    setTimeout(() => recognition.start(), 300);
+  }
+});
+
+// Wake Word Toggle
+btnWakeWord.addEventListener('click', () => {
+  wakeWordMode = !wakeWordMode;
+  activeListening = false;
+  synth.cancel();
+
+  if (wakeWordMode) {
+    btnWakeWord.innerText = "Wake Word Active (Say 'Hello Siri')";
+    btnWakeWord.classList.add("active-glow");
+    setUIState('idle');
+    try { recognition.start(); } catch(e) {}
+  } else {
+    btnWakeWord.innerText = "Enable Wake Word Mode";
+    btnWakeWord.classList.remove("active-glow");
+    recognition.stop();
+    setUIState('idle');
+  }
+});
+
+// Mute Toggle
+btnMute.addEventListener('click', () => {
+  isMuted = !isMuted;
+  if (isMuted) {
+    btnMute.innerText = "Unmute Output";
+    synth.cancel();
+  } else {
+    btnMute.innerText = "Mute Output";
+  }
+});
+
+// Clear Chat
+btnClear.addEventListener('click', () => {
+  clearInterval(typeTimer);
+  chatUser.innerText = "";
+  chatSiri.innerText = "";
+  chatSiri.classList.remove('caret');
+  conversation.classList.add('empty');
+  synth.cancel();
+  setUIState('idle');
+});
+
+// Initialize voice load
+loadVoice();
+setUIState('idle');
+</script>
+</body>
+</html>
